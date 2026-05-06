@@ -75,15 +75,22 @@ const NUTRITION = {
 // ─── Session Log ─────────────────────────────────────────────────────────────
 const sessionLogs = {};
 
+// ─── Helper: check if item needs a size prefix ────────────────────────────────
+function needsSizePrefix(item) {
+  const sizeItems = ['fries', 'coke', 'coffee', 'mcflurry'];
+  return sizeItems.some(s => item.toLowerCase().includes(s));
+}
+
 // ─── Helper: build nutrition key ─────────────────────────────────────────────
 function buildKey(item, size, quantity) {
+  // Handle nuggets with quantity
   if (item.toLowerCase().includes('nugget')) {
     return `nuggets ${quantity || 10}`;
   }
-  const sizeItems = ['fries', 'coke', 'coffee', 'mcflurry'];
-  const needsSize = sizeItems.some(s => item.toLowerCase().includes(s));
-  if (needsSize && size) {
-    return `${size} ${item}`.toLowerCase();
+  // Handle items that need size prefix
+  if (needsSizePrefix(item)) {
+    const resolvedSize = size || 'medium';
+    return `${resolvedSize} ${item}`.toLowerCase();
   }
   return item.toLowerCase();
 }
@@ -102,17 +109,25 @@ function logFood(agent) {
     return;
   }
 
+  // separate sizes into a queue only for items that need it
+  const sizeQueue = [...sizes];
   let responseLines = [];
   let totalCals = 0;
 
   items.forEach((item, i) => {
-    const size      = sizes[i]      || '';
-    const quantity  = quantities[i] || 1;
+    const quantity = quantities[i] || 1;
+
+    // only consume a size from the queue if this item needs one
+    let size = '';
+    if (needsSizePrefix(item)) {
+      size = sizeQueue.shift() || 'medium';
+    }
+
     const key       = buildKey(item, size, quantity);
     const nutrition = NUTRITION[key];
 
     if (!nutrition) {
-      responseLines.push(`Sorry, I don't have data for "${item}" yet.`);
+      responseLines.push(`Sorry, I don't have data for "${key}" yet.`);
       return;
     }
 
@@ -150,7 +165,7 @@ function foodInfo(agent) {
   const nutrition = NUTRITION[key];
 
   if (!nutrition) {
-    agent.add(`Sorry, I don't have nutritional data for "${item}" yet.`);
+    agent.add(`Sorry, I don't have nutritional data for "${key}" yet.`);
     return;
   }
 
@@ -211,7 +226,7 @@ app.post('/webhook', (req, res) => {
   agent.handleRequest(intentMap);
 });
 
-// ─── Health check route (keeps Render alive) ──────────────────────────────────
+// ─── Health check route ───────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.send('MacNutrition webhook is running!');
 });
