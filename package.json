@@ -1,7 +1,13 @@
 {
-  "name": "mcdonalds-webhook",
+  "name": "macnutrition",
   "version": "1.0.0",
+  "description": "MacNutrition - McDonald's Calorie & Macro Bot",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
-  "dependencies": { "express": "^4.18.2" }
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dialogflow-fulfillment": "^0.6.1"
+  }
 }
